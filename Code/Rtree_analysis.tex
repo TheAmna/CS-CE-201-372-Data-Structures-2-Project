@@ -1,0 +1,33 @@
+getEnlargement() --> O(1) as computes one enlarged rectangle and subtract two areas.
+
+computeMBR() --> loops over all items or children in a single node. A node holds at most maxChildren entries.
+        O(maxChildren)  →  treated as O(1) since maxChildren is a fixed constant
+
+splitNode() --> PickSeeds step compares every pair of entries in the overflowed node, which has maxChildren + 1 entries. The PickNext step assigns each remaining entry in one pass.
+                so PickSeeds:O(maxChildren)
+                PickNext: O(maxChildren)
+                Total O(2 x maxChildren) →  O(1) since maxChildren is fixed
+
+adjustTree() --> walks from leaf to root , one level at a time. Haight is log n , work at each level is O(1).
+                    so, O(logn)
+
+insert() --> calls chooseleaf+ possibly splitNode + adjustTree
+            so, chooseLeaf:   O(log n)
+            splitNode:    O(1)  at most one split per level
+            adjustTree:   O(log n)
+            Total:        O(log n)
+
+findleaf() --> in the worst case it must visit every node in the tree because MBRs overlap and multiple branches must be explored. 
+                In practice with low overlap it behaves like O(log n), but worst case it touches every node.
+
+search() --> Low overlap means few branches. High overlap means many branches.
+            Best case:   O(log n + k)   where k = number of results returned
+            Worst case:  O(n)
+
+condenseTree() -->  Walk up:      O(log n)
+                    Re-insertions: O(m x log n)
+                    Total:        O(m x log n) ; If d nodes are dissolved with m total orphaned entries
+
+remove() --> findLeaf:      O(log n) average, O(n) worst
+            condenseTree:  O(log n) average
+            Total:         O(log n) average,  O(n) worst case

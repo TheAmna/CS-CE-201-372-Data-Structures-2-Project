@@ -146,7 +146,7 @@ void Btree::rangeSearchHelper(BtreeNode* node, float low, float high,std::vector
     while (i < (int)node->keys.size() && node->keys[i] <= high) {
         if (!node->isLeaf)
             rangeSearchHelper(node->children[i], low, high, result); // check left child of this key
-        results.push_back(node->keys[i]);
+        result.push_back(node->keys[i]);
         ++i;
     }
  

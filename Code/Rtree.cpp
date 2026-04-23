@@ -1,367 +1,11 @@
-// #include "Rtree.hpp"
-// #include <stdexcept>
-// #include <limits>
-// #include <algorithm>
-
-// // ─────────────────────────────────────────────
-// //  Constructor / Destructor
-// // ─────────────────────────────────────────────
-
-// Rtree::Rtree(int max) : maxChildren(max), minChildren(max / 2) {
-//     root_node = new RtreeNode(true); // start with an empty leaf
-// }
-
-// Rtree::~Rtree() {
-//     deleteTree(root_node);
-// }
-
-// void Rtree::deleteTree(RtreeNode* node) {
-//     if (!node) return;
-//     for (RtreeNode* child : node->children)
-//         deleteTree(child);
-//     delete node;
-// }
-
-// // ─────────────────────────────────────────────
-// //  Helper: compute MBR from all children / items
-// // ─────────────────────────────────────────────
-
-// Rectangle Rtree::computeMBR(RtreeNode* node) {
-//     Rectangle mbr = {
-//         std::numeric_limits<float>::max(),
-//         std::numeric_limits<float>::max(),
-//        -std::numeric_limits<float>::max(),
-//        -std::numeric_limits<float>::max()
-//     };
-
-//     if (node->isLeaf) {
-//         for (const Rectangle& r : node->items) {
-//             mbr.x1 = std::min(mbr.x1, r.x1);
-//             mbr.y1 = std::min(mbr.y1, r.y1);
-//             mbr.x2 = std::max(mbr.x2, r.x2);
-//             mbr.y2 = std::max(mbr.y2, r.y2);
-//         }
-//     } else {
-//         for (RtreeNode* child : node->children) {
-//             mbr.x1 = std::min(mbr.x1, child->mbr.x1);
-//             mbr.y1 = std::min(mbr.y1, child->mbr.y1);
-//             mbr.x2 = std::max(mbr.x2, child->mbr.x2);
-//             mbr.y2 = std::max(mbr.y2, child->mbr.y2);
-//         }
-//     }
-//     return mbr;
-// }
-
-// // ─────────────────────────────────────────────
-// //  getEnlargement
-// //
-// //  How much does `container` grow if we add `newItem`?
-// //  Returns the area INCREASE, not the new total area.
-// // ─────────────────────────────────────────────
-
-// float Rtree::getEnlargement(const Rectangle& container, const Rectangle& newItem) {
-//     // Build the smallest rectangle that covers both
-//     Rectangle enlarged = {
-//         std::min(container.x1, newItem.x1),
-//         std::min(container.y1, newItem.y1),
-//         std::max(container.x2, newItem.x2),
-//         std::max(container.y2, newItem.y2)
-//     };
-//     // Enlargement = extra area required
-//     return enlarged.area() - container.area();
-// }
-
-// // ─────────────────────────────────────────────
-// //  chooseLeaf
-// //
-// //  Descend the tree from `node` to find the best leaf
-// //  to insert `rect` into.
-// //
-// //  Algorithm (Guttman 1984, CL):
-// //    At each internal level, pick the child whose MBR
-// //    needs the LEAST enlargement to contain rect.
-// //    Ties are broken by smallest existing MBR area.
-// // ─────────────────────────────────────────────
-
-// RtreeNode* Rtree::chooseLeaf(RtreeNode* node, const Rectangle& rect) {
-//     // Base case: we've reached a leaf
-//     if (node->isLeaf)
-//         return node;
-
-//     RtreeNode* bestChild    = nullptr;
-//     float      bestEnlarge  = std::numeric_limits<float>::max();
-//     float      bestArea     = std::numeric_limits<float>::max();
-
-//     for (RtreeNode* child : node->children) {
-//         float enlarge = getEnlargement(child->mbr, rect);
-//         float area    = child->mbr.area();
-
-//         // Pick child needing least enlargement; break ties by smallest area
-//         if (enlarge < bestEnlarge || (enlarge == bestEnlarge && area < bestArea)) {
-//             bestEnlarge = enlarge;
-//             bestArea    = area;
-//             bestChild   = child;
-//         }
-//     }
-
-//     // Recurse down the chosen subtree
-//     return chooseLeaf(bestChild, rect);
-// }
-
-// // ─────────────────────────────────────────────
-// //  splitNode  (Guttman Quadratic Split)
-// //
-// //  Called when `node` has overflowed (maxChildren + 1 entries).
-// //  Splits into two nodes and returns the NEW sibling.
-// //
-// //  Steps:
-// //    1. PickSeeds  — find the pair that wastes the most area together
-// //    2. PickNext   — greedily assign remaining entries
-// //    3. Return the newly created sibling
-// // ─────────────────────────────────────────────
-
-// RtreeNode* Rtree::splitNode(RtreeNode* node) {
-//     RtreeNode* sibling = new RtreeNode(node->isLeaf);
-//     sibling->parent    = node->parent;
-
-//     // ── LEAF SPLIT ──────────────────────────────────────────────────────────
-//     if (node->isLeaf) {
-//         std::vector<Rectangle> all = node->items; // snapshot all items
-//         node->items.clear();
-
-//         // 1. PickSeeds: pair whose combined MBR wastes the most dead space
-//         int   seed1 = 0, seed2 = 1;
-//         float worstWaste = -std::numeric_limits<float>::max();
-
-//         for (int i = 0; i < (int)all.size(); ++i) {
-//             for (int j = i + 1; j < (int)all.size(); ++j) {
-//                 Rectangle combined = all[i].unionWith(all[j]);
-//                 float waste = combined.area() - all[i].area() - all[j].area();
-//                 if (waste > worstWaste) {
-//                     worstWaste = waste;
-//                     seed1 = i;
-//                     seed2 = j;
-//                 }
-//             }
-//         }
-
-//         // Assign seeds to the two groups
-//         node->items.push_back(all[seed1]);
-//         sibling->items.push_back(all[seed2]);
-
-//         // Remove seeds from the pool (iterate backwards to keep indices valid)
-//         std::vector<Rectangle> pool;
-//         for (int i = 0; i < (int)all.size(); ++i)
-//             if (i != seed1 && i != seed2)
-//                 pool.push_back(all[i]);
-
-//         // 2. PickNext: assign each remaining entry to the group whose MBR
-//         //    needs the least enlargement; enforce minChildren constraint
-//         for (const Rectangle& r : pool) {
-//             // If one group is too small, force all remaining entries into it
-//             int remaining = (int)pool.size(); // note: same for loop, approximate
-//             if ((int)node->items.size() + remaining <= minChildren) {
-//                 node->items.push_back(r);
-//                 continue;
-//             }
-//             if ((int)sibling->items.size() + remaining <= minChildren) {
-//                 sibling->items.push_back(r);
-//                 continue;
-//             }
-
-//             Rectangle mbrA = computeMBR(node);
-//             Rectangle mbrB = computeMBR(sibling);
-//             float dA = getEnlargement(mbrA, r);
-//             float dB = getEnlargement(mbrB, r);
-
-//             if (dA < dB || (dA == dB && node->items.size() <= sibling->items.size()))
-//                 node->items.push_back(r);
-//             else
-//                 sibling->items.push_back(r);
-//         }
-
-//     // ── INTERNAL NODE SPLIT ─────────────────────────────────────────────────
-//     } else {
-//         std::vector<RtreeNode*> all = node->children;
-//         node->children.clear();
-
-//         // 1. PickSeeds
-//         int   seed1 = 0, seed2 = 1;
-//         float worstWaste = -std::numeric_limits<float>::max();
-
-//         for (int i = 0; i < (int)all.size(); ++i) {
-//             for (int j = i + 1; j < (int)all.size(); ++j) {
-//                 Rectangle combined = all[i]->mbr.unionWith(all[j]->mbr);
-//                 float waste = combined.area() - all[i]->mbr.area() - all[j]->mbr.area();
-//                 if (waste > worstWaste) {
-//                     worstWaste = waste;
-//                     seed1 = i;
-//                     seed2 = j;
-//                 }
-//             }
-//         }
-
-//         node->children.push_back(all[seed1]);
-//         sibling->children.push_back(all[seed2]);
-//         all[seed1]->parent = node;
-//         all[seed2]->parent = sibling;
-
-//         std::vector<RtreeNode*> pool;
-//         for (int i = 0; i < (int)all.size(); ++i)
-//             if (i != seed1 && i != seed2)
-//                 pool.push_back(all[i]);
-
-//         // 2. PickNext
-//         for (RtreeNode* child : pool) {
-//             int remaining = (int)pool.size();
-//             if ((int)node->children.size() + remaining <= minChildren) {
-//                 child->parent = node;
-//                 node->children.push_back(child);
-//                 continue;
-//             }
-//             if ((int)sibling->children.size() + remaining <= minChildren) {
-//                 child->parent = sibling;
-//                 sibling->children.push_back(child);
-//                 continue;
-//             }
-
-//             Rectangle mbrA = computeMBR(node);
-//             Rectangle mbrB = computeMBR(sibling);
-//             float dA = getEnlargement(mbrA, child->mbr);
-//             float dB = getEnlargement(mbrB, child->mbr);
-
-//             if (dA < dB || (dA == dB && node->children.size() <= sibling->children.size())) {
-//                 child->parent = node;
-//                 node->children.push_back(child);
-//             } else {
-//                 child->parent = sibling;
-//                 sibling->children.push_back(child);
-//             }
-//         }
-//     }
-
-//     // Update MBRs for both halves
-//     node->mbr    = computeMBR(node);
-//     sibling->mbr = computeMBR(sibling);
-
-//     return sibling;
-// }
-
-// // ─────────────────────────────────────────────
-// //  adjustTree
-// //
-// //  Walk from `node` back up to root, updating MBRs.
-// //  If a split produced `newSibling`, propagate it upward,
-// //  potentially splitting parent nodes all the way to the root.
-// // ─────────────────────────────────────────────
-
-// void Rtree::adjustTree(RtreeNode* node, RtreeNode* newSibling) {
-//     // If we've reached the root, handle root split
-//     if (node == root_node) {
-//         if (newSibling) {
-//             // The root was split — create a new root above both halves
-//             RtreeNode* newRoot  = new RtreeNode(false);
-//             newRoot->children.push_back(node);
-//             newRoot->children.push_back(newSibling);
-//             node->parent       = newRoot;
-//             newSibling->parent = newRoot;
-//             newRoot->mbr       = computeMBR(newRoot);
-//             root_node          = newRoot;
-//         }
-//         return; // done
-//     }
-
-//     RtreeNode* parent = node->parent;
-
-//     // Update parent's MBR to cover its (possibly changed) children
-//     parent->mbr = computeMBR(parent);
-
-//     // If a split happened below, add the new sibling to the parent
-//     RtreeNode* propagatedSplit = nullptr;
-//     if (newSibling) {
-//         newSibling->parent = parent;
-//         parent->children.push_back(newSibling);
-
-//         // Parent overflows — split it too
-//         if ((int)parent->children.size() > maxChildren) {
-//             propagatedSplit = splitNode(parent);
-//         }
-
-//         // Re-sync parent MBR after adding sibling
-//         parent->mbr = computeMBR(parent);
-//     }
-
-//     // Continue walking up
-//     adjustTree(parent, propagatedSplit);
-// }
-
-// // ─────────────────────────────────────────────
-// //  insert  (public entry point)
-// // ─────────────────────────────────────────────
-
-// void Rtree::insert(const Rectangle& rect) {
-//     // 1. Find the best leaf
-//     RtreeNode* leaf = chooseLeaf(root_node, rect);
-
-//     // 2. Insert into leaf
-//     leaf->items.push_back(rect);
-//     leaf->mbr = computeMBR(leaf);
-
-//     // 3. Split leaf if it overflows
-//     RtreeNode* sibling = nullptr;
-//     if ((int)leaf->items.size() > maxChildren)
-//         sibling = splitNode(leaf);
-
-//     // 4. Propagate changes (and any split) back to root
-//     adjustTree(leaf, sibling);
-// }
-
-// // ─────────────────────────────────────────────
-// //  search  (recursive range query)
-// // ─────────────────────────────────────────────
-
-// void Rtree::search(RtreeNode* node, const Rectangle& queryBox,
-//                    std::vector<Rectangle>& results) {
-//     if (!node) return;
-
-//     if (node->isLeaf) {
-//         for (const Rectangle& r : node->items)
-//             if (r.overlaps(queryBox))
-//                 results.push_back(r);
-//     } else {
-//         for (RtreeNode* child : node->children)
-//             if (child->mbr.overlaps(queryBox))
-//                 search(child, queryBox, results);
-//     }
-// }
-
-// bool Rtree::remove(const Rectangle& rect) {
-//     // D1: Find the leaf that holds rect
-//     RtreeNode* leaf = findLeaf(root_node, rect);
-//     if (!leaf) return false; // rect not in tree
- 
-//     // D2: Remove the entry from the leaf
-//     auto& items = leaf->items;
-//     auto it = std::find_if(items.begin(), items.end(),
-//                            [&](const Rectangle& r){ return r.equals(rect); });
-//     if (it == items.end()) return false;
-//     items.erase(it);
- 
-//     // D3: Fix underfull nodes and recompute MBRs
-//     condenseTree(leaf);
- 
-//     return true;
-// }
- #include "Rtree.hpp"
+#include "Rtree.hpp"
 #include <stdexcept>
 #include <limits>
 #include <algorithm>
 #include <functional>
 
-// ─────────────────────────────────────────────
-//  Constructor / Destructor
-// ─────────────────────────────────────────────
 
+//constructor and destructor
 Rtree::Rtree(int max) : maxChildren(max), minChildren(max / 2) {
     root_node = new RtreeNode(true); // start with an empty leaf
 }
@@ -370,6 +14,7 @@ Rtree::~Rtree() {
     deleteTree(root_node);
 }
 
+//helper to delete
 void Rtree::deleteTree(RtreeNode* node) {
     if (!node) return;
     for (RtreeNode* child : node->children)
@@ -377,10 +22,9 @@ void Rtree::deleteTree(RtreeNode* node) {
     delete node;
 }
 
-// ─────────────────────────────────────────────
-//  Helper: compute MBR from all children / items
-// ─────────────────────────────────────────────
 
+//helpers to compute mbr
+//To keep the tree accurate we have to calculate MBR each time.
 Rectangle Rtree::computeMBR(RtreeNode* node) {
     Rectangle mbr = {
         std::numeric_limits<float>::max(),
@@ -407,12 +51,8 @@ Rectangle Rtree::computeMBR(RtreeNode* node) {
     return mbr;
 }
 
-// ─────────────────────────────────────────────
-//  getEnlargement
-//
-//  How much does `container` grow if we add `newItem`?
-//  Returns the area INCREASE, not the new total area.
-// ─────────────────────────────────────────────
+
+//get Enlargement is udes to return the increased area, when we add any new item
 
 float Rtree::getEnlargement(const Rectangle& container, const Rectangle& newItem) {
     // Build the smallest rectangle that covers both
@@ -426,26 +66,16 @@ float Rtree::getEnlargement(const Rectangle& container, const Rectangle& newItem
     return enlarged.area() - container.area();
 }
 
-// ─────────────────────────────────────────────
-//  chooseLeaf
-//
-//  Descend the tree from `node` to find the best leaf
-//  to insert `rect` into.
-//
-//  Algorithm (Guttman 1984, CL):
-//    At each internal level, pick the child whose MBR
-//    needs the LEAST enlargement to contain rect.
-//    Ties are broken by smallest existing MBR area.
-// ─────────────────────────────────────────────
-
+//In Btree we follow a path but in R-tree we are dealing with 2-D space so we have to find where it best fits.
+//At each internal level, pick the child whose MBR needs the LEAST enlargement to contain rect.
 RtreeNode* Rtree::chooseLeaf(RtreeNode* node, const Rectangle& rect) {
     // Base case: we've reached a leaf
     if (node->isLeaf)
         return node;
 
     RtreeNode* bestChild    = nullptr;
-    float      bestEnlarge  = std::numeric_limits<float>::max();
-    float      bestArea     = std::numeric_limits<float>::max();
+    float bestEnlarge  = std::numeric_limits<float>::max(); //we to find the minimum thats why starting at infinity.
+    float bestArea     = std::numeric_limits<float>::max();
 
     for (RtreeNode* child : node->children) {
         float enlarge = getEnlargement(child->mbr, rect);
@@ -463,17 +93,13 @@ RtreeNode* Rtree::chooseLeaf(RtreeNode* node, const Rectangle& rect) {
     return chooseLeaf(bestChild, rect);
 }
 
-// ─────────────────────────────────────────────
-//  splitNode  (Guttman Quadratic Split)
-//
-//  Called when `node` has overflowed (maxChildren + 1 entries).
-//  Splits into two nodes and returns the NEW sibling.
-//
+
+
+//  Called when node has overflowed (maxChildren + 1 entries).It will splits into two nodes and returns the NEW sibling.
 //  Steps:
 //    1. PickSeeds  — find the pair that wastes the most area together
 //    2. PickNext   — greedily assign remaining entries
 //    3. Return the newly created sibling
-// ─────────────────────────────────────────────
 
 RtreeNode* Rtree::splitNode(RtreeNode* node) {
     RtreeNode* sibling = new RtreeNode(node->isLeaf);
@@ -602,13 +228,9 @@ RtreeNode* Rtree::splitNode(RtreeNode* node) {
     return sibling;
 }
 
-// ─────────────────────────────────────────────
-//  adjustTree
-//
-//  Walk from `node` back up to root, updating MBRs.
-//  If a split produced `newSibling`, propagate it upward,
+
+//  Walk from node back up to root, updating MBRs.If a split produced newSibling, propagate it upward,
 //  potentially splitting parent nodes all the way to the root.
-// ─────────────────────────────────────────────
 
 void Rtree::adjustTree(RtreeNode* node, RtreeNode* newSibling) {
     // If we've reached the root, handle root split
@@ -623,7 +245,7 @@ void Rtree::adjustTree(RtreeNode* node, RtreeNode* newSibling) {
             newRoot->mbr       = computeMBR(newRoot);
             root_node          = newRoot;
         }
-        return; // done
+        return; 
     }
 
     RtreeNode* parent = node->parent;
@@ -650,31 +272,24 @@ void Rtree::adjustTree(RtreeNode* node, RtreeNode* newSibling) {
     adjustTree(parent, propagatedSplit);
 }
 
-// ─────────────────────────────────────────────
-//  insert  (public entry point)
-// ─────────────────────────────────────────────
-
 void Rtree::insert(const Rectangle& rect) {
-    // 1. Find the best leaf
+    // Find the best leaf
     RtreeNode* leaf = chooseLeaf(root_node, rect);
 
-    // 2. Insert into leaf
+    // Insert into leaf
     leaf->items.push_back(rect);
     leaf->mbr = computeMBR(leaf);
 
-    // 3. Split leaf if it overflows
+    // Split leaf if it overflows
     RtreeNode* sibling = nullptr;
     if ((int)leaf->items.size() > maxChildren)
         sibling = splitNode(leaf);
 
-    // 4. Propagate changes (and any split) back to root
+    //  Propagate changes back to root
     adjustTree(leaf, sibling);
 }
 
-// ─────────────────────────────────────────────
-//  search  (recursive range query)
-// ─────────────────────────────────────────────
-
+//searching for the nodes that overlaps the region in queryBox.If not overlaps entire subtree is skipped.
 void Rtree::search(RtreeNode* node, const Rectangle& queryBox,
                    std::vector<Rectangle>& results) {
     if (!node) return;

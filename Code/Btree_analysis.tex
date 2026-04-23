@@ -1,0 +1,53 @@
+splitChild() --> moves up to (2t−1) keys and (2t) children.
+                 t is constant.
+                 O(t) → O(1)
+
+insertNonFull() --> shifts keys within a node (max 2t−1)
+                    recursion depth = height = O(log n)
+                    Total: O(log n)
+
+insert() --> may split root once + calls insertNonFull
+             split: O(1)
+             insertNonFull: O(log n)
+             Total: O(log n)
+
+search() --> at each level scan up to (2t−1) keys
+             height = O(log n)
+             Total: O(log n)
+
+rangeSearch() --> visits only relevant nodes
+                  Best case: O(log n + k)
+                  Worst case: O(n)
+
+getPredecessor() --> travels down one branch (height)
+                     O(log n)
+
+getSuccessor() --> travels down one branch (height)
+                   O(log n)
+
+removeFromLeaf() --> erase from vector of size ≤ (2t−1)
+                     O(t) → O(1)
+
+removeFromInternal() --> may call predecessor/successor + recursion
+                        O(log n)
+
+borrowFromPrev() --> constant operations on node
+                     O(1)
+
+borrowFromNext() --> constant operations on node
+                     O(1)
+
+merge() --> combines two nodes (≤ 2t−1 keys total)
+            O(t) → O(1)
+
+fill() --> one borrow or merge
+           O(1)
+
+removeFromNode() --> recursive, height = O(log n)
+                     each level does O(1) work
+                     Total: O(log n)
+
+remove() --> search + removeFromNode
+             search: O(log n)
+             removeFromNode: O(log n)
+             Total: O(log n)

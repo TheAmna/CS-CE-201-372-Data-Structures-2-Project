@@ -107,14 +107,12 @@ RtreeNode* Rtree::splitNode(RtreeNode* node) {
         int seed1 = 0, seed2 = 1;
         float worstWaste = -INFINITY;
 
-        for (int i = 0; i < all.size(); ++i) {
-            for (int j = i + 1; j < all.size(); ++j) {
+        for (int i = 0; i < (int)all.size(); ++i) {
+            for (int j = i + 1; j < (int)all.size(); ++j) {
                 float area1 = all[i].area();
                 float area2 = all[j].area();
-                float combinedArea = all[i].unionWith(all[j]).area()
+                float combinedArea = all[i].unionWith(all[j]).area();
 
-                // 2. Calculate the area of that union
-                float combinedArea = (maxX - minX) * (maxY - minY);
                 // Calculate empty space created by pairing these two
                 float waste = combinedArea - area1 - area2;
 
@@ -237,7 +235,7 @@ void Rtree::adjustTree(RtreeNode* node, RtreeNode* newSibling) {
         if (newSibling) {
             RtreeNode* newRoot  = new RtreeNode(false); //false because it is not a leaf
             newRoot->children.push_back(node);
-            newRoone ot->children.push_back(newSibling);
+            newRoot->children.push_back(newSibling);
             node->parent       = newRoot;
             newSibling->parent = newRoot;
             newRoot->mbr       = computeMBR(newRoot); //update new Root mbr

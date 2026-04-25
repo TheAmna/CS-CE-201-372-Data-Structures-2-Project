@@ -29,11 +29,7 @@ struct RtreeNode {
     std::vector<RtreeNode*> children;
     RtreeNode* parent = nullptr;
 
-    // RtreeNode(bool leaf) : isLeaf(leaf), mbr{0, 0, 0, 0} {}
-    // bool isLeaf;
-    // Rectangle mbr;
-    // std::vector<Rectangle> items;
-    // std::vector <RtreeNode*>children;
+
     RtreeNode(bool leaf): isLeaf(leaf){}
 };
 
@@ -44,7 +40,6 @@ private:
     int minChildren;
 
     RtreeNode* chooseLeaf(RtreeNode* node,const Rectangle& rect); //finding the best sibling to put a new rectangle
-    //void adjustTree(RtreeNode* node ); //update MBRs after an insertion
     void adjustTree(RtreeNode* node, RtreeNode* newSibling = nullptr);
     RtreeNode* splitNode( RtreeNode* node); //splitting after it overflows
     float getEnlargement(const Rectangle& container, const Rectangle& newItem);//helper to calculate how much AREA WILL GROW WHEN WE ADD A RECTANGLE.

@@ -41,4 +41,4 @@ public:
     bool search(float key);              
     std::vector<float> rangeSearch(float low, float high); //find all keys in [lo,hi]
     BtreeNode* getRoot() { return root_node; }
-}; is that okoat?
+};

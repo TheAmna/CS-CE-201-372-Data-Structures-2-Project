@@ -61,6 +61,20 @@ float Rtree::getEnlargement(const Rectangle& container, const Rectangle& newItem
     return enlarged.area() - container.area();
 }
 
+
+void Rtree::insert(const Rectangle& rect) {
+    RtreeNode* leaf = chooseLeaf(root_node, rect); //finding the best leaf node where least enlargemnet takes place
+
+    leaf->items.push_back(rect);
+    leaf->mbr = computeMBR(leaf);
+
+    RtreeNode* sibling = nullptr;
+    if ((int)leaf->items.size() > maxChildren)
+        sibling = splitNode(leaf);
+
+    adjustTree(leaf, sibling);
+}
+
 //In Btree we follow a path but in R-tree we are dealing with 2-D space so we have to find where it best fits.
 //At each internal level, pick the child whose MBR needs the LEAST enlargement to contain rect.
 RtreeNode* Rtree::chooseLeaf(RtreeNode* node, const Rectangle& rect) {
@@ -263,18 +277,7 @@ void Rtree::adjustTree(RtreeNode* node, RtreeNode* newSibling) {
     adjustTree(parent, propagatedSplit);
 }
 
-void Rtree::insert(const Rectangle& rect) {
-    RtreeNode* leaf = chooseLeaf(root_node, rect); //finding the best leaf node where least enlargemnet takes place
 
-    leaf->items.push_back(rect);
-    leaf->mbr = computeMBR(leaf);
-
-    RtreeNode* sibling = nullptr;
-    if ((int)leaf->items.size() > maxChildren)
-        sibling = splitNode(leaf);
-
-    adjustTree(leaf, sibling);
-}
 
 //searching for the nodes that overlaps the region in queryBox.If not overlaps entire subtree is skipped.
 void Rtree::search(RtreeNode* node, const Rectangle& queryBox,

@@ -16,7 +16,7 @@ void Btree::deleteTree(BtreeNode* node){
     if (node == nullptr)   // empty node
         return;
     // delete all child nodes
-    for (int i = 0; i < node->children.size(); i++){
+    for (int i = 0; i < (int)node->children.size(); i++){
         deleteTree(node->children[i]);  //recursive call for each child
     }
     // now delete the current node itself

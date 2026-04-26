@@ -12,7 +12,6 @@
 /*
     Uses an R-tree to store Pakistani cities as bounding boxes.
     Each city has: name, province, population, area, elevation, type, coordinates.
-
     MENU:
         1 → Search cities in a region        (R-tree 2D range search)
         2 → Find cities near a location      (R-tree proximity search)
@@ -299,24 +298,17 @@ void findNearby(Rtree& tree) {
             if (nearest)
                 std::cout << "  Nearest city    : " << nearest->name << "\n";
         }
-
         if (!results.empty() && askMap()) {
             std::string mapTitle = std::to_string((int)km) + "km of " + label;
             showMap(results, mapTitle, "2");
         }
-
     } while (askRepeat("Search another location?"));
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  FUNCTION 3 — Search by city type
-// ─────────────────────────────────────────────────────────────────────────────
-
 void searchByType(Rtree& tree) {
     do {
         printTitle("FUNCTION 3: SEARCH BY CITY TYPE");
-
         std::cout << "  City types available:\n";
         std::cout << "    a → port       (coastal/trade cities)\n";
         std::cout << "    b → capital    (provincial/federal capitals)\n";
@@ -327,7 +319,6 @@ void searchByType(Rtree& tree) {
 
         char ch; std::cin >> ch;
         std::string typeFilter;
-
         if      (ch == 'a') typeFilter = "port";
         else if (ch == 'b') typeFilter = "capital";
         else if (ch == 'c') typeFilter = "industrial";
@@ -337,7 +328,6 @@ void searchByType(Rtree& tree) {
         // full Pakistan scan then attribute filter
         std::vector<Rectangle> all;
         tree.search(tree.getRoot(), {60.0, 23.0, 78.0, 37.5}, all);
-
         std::vector<Rectangle> filtered;
         for (const Rectangle& r : all) {
             City* c = findCity(r);
@@ -347,31 +337,22 @@ void searchByType(Rtree& tree) {
 
         std::cout << "\n  " << typeFilter << " cities in Pakistan:\n";
         printResults(filtered);
-
         if (!filtered.empty() && askMap())
             showMap(filtered, typeFilter + " cities", "3");
-
     } while (askRepeat("Search another city type?"));
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  FUNCTION 4 — Province summary + statistics
-// ─────────────────────────────────────────────────────────────────────────────
-
 void provinceSummary(Rtree& tree) {
     do {
         printTitle("FUNCTION 4: PROVINCE SUMMARY & STATISTICS");
-
         std::vector<Rectangle> all;
         tree.search(tree.getRoot(), {60.0, 23.0, 78.0, 37.5}, all);
-
         std::map<std::string, std::vector<City*>> byProvince;
         for (const Rectangle& r : all) {
             City* c = findCity(r);
             if (c) byProvince[c->province].push_back(c);
         }
-
         printLine();
         std::cout << "  " << std::left
                   << std::setw(16) << "Province"
@@ -380,14 +361,11 @@ void provinceSummary(Rtree& tree) {
                   << std::setw(16) << "Avg Density"
                   << "Largest City\n";
         printLine();
-
         long grandTotal = 0;
-
         for (auto& [province, cityList] : byProvince) {
             long  totalPop  = 0;
             long  totalArea = 0;
             City* largest   = nullptr;
-
             for (City* c : cityList) {
                 totalPop  += c->population;
                 totalArea += c->area_km2;
@@ -396,14 +374,12 @@ void provinceSummary(Rtree& tree) {
             }
 
             long density = (totalArea > 0) ? totalPop / totalArea : 0;
-
             std::cout << "  " << std::left
                       << std::setw(16) << province
                       << std::setw(8)  << cityList.size()
                       << std::setw(18) << fmtPop(totalPop)
                       << std::setw(16) << (std::to_string(density) + "/km²")
                       << (largest ? largest->name : "-") << "\n";
-
             grandTotal += totalPop;
         }
 
@@ -424,29 +400,20 @@ void provinceSummary(Rtree& tree) {
         }
         if (highest) std::cout << "  Highest city: " << highest->name << " (" << highest->elevation_m << "m)\n";
         if (lowest)  std::cout << "  Lowest city : " << lowest->name  << " (" << lowest->elevation_m  << "m)\n";
-
     } while (askRepeat("View province summary again?"));
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  MAIN
-// ─────────────────────────────────────────────────────────────────────────────
-
 int main() {
-
     std::cout << "\n";
     std::cout << "  ╔══════════════════════════════════════════════════╗\n";
     std::cout << "  ║       PAKISTAN CITY SPATIAL SEARCH APP          ║\n";
     std::cout << "  ║            Powered by R-Tree                    ║\n";
     std::cout << "  ║         CS-201 Data Structures II               ║\n";
     std::cout << "  ╚══════════════════════════════════════════════════╝\n\n";
-
     Rtree tree(4);
     std::cout << "  Loading cities from " << CSV_FILE << "...\n";
     if (!loadCities(tree)) return 1;
     std::cout << "  ✓ " << cities.size() << " cities loaded into R-tree\n";
-
     char choice;
     do {
         std::cout << "\n";
@@ -461,15 +428,12 @@ int main() {
         std::cout << "  ════════════════════════════════════════════════\n";
         std::cout << "  Choice: ";
         std::cin >> choice;
-
         if      (choice == '1') searchRegion(tree);
         else if (choice == '2') findNearby(tree);
         else if (choice == '3') searchByType(tree);
         else if (choice == '4') provinceSummary(tree);
         else if (choice != 'q') std::cout << "  Invalid choice, try again.\n";
-
     } while (choice != 'q');
-
     std::cout << "\n  Goodbye!\n\n";
     return 0;
 }

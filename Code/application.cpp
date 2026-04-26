@@ -11,8 +11,6 @@
 #include <cstdlib>   // for system()
 
 /*
-    PAKISTAN CITY SPATIAL SEARCH APPLICATION
-    ─────────────────────────────────────────
     Uses an R-tree to store Pakistani cities as bounding boxes.
     Each city has: name, province, population, area, elevation, type, coordinates.
 
@@ -27,9 +25,6 @@
         q → Quit
 */
 
-
-// ── City struct ───────────────────────────────────────────────────────────────
-
 struct City {
     std::string name;
     std::string province;
@@ -42,9 +37,6 @@ struct City {
 
 std::vector<City> cities;
 const std::string CSV_FILE = "pakistan_cities.csv";
-
-
-// ── Print helpers ─────────────────────────────────────────────────────────────
 
 void printLine() { std::cout << "  " << std::string(58, '-') << "\n"; }
 
@@ -68,15 +60,13 @@ void printCity(const City& c, int rank = 0) {
     else          std::cout << "   •  ";
     std::cout << std::left  << std::setw(18) << c.name
               << std::setw(14) << ("(" + c.province + ")")
-              << std::setw(12) << c.type          // was 10 — fixed formatting gap
+              << std::setw(12) << c.type          
               << "pop: " << std::right << std::setw(13) << fmtPop(c.population)
               << "  elev: " << c.elevation_m << "m\n";
 }
 
-// ── small helper: ask "repeat or main menu?" ─────────────────────────────────
-// prompt  = e.g. "Search another region?"
-// returns true  → user wants to repeat the current function
-// returns false → user wants to go back to main menu
+// returns true if user wants to repeat the current function
+// returns false if user wants to go back to main menu
 bool askRepeat(const std::string& prompt) {
     char ans;
     std::cout << "\n";
@@ -89,11 +79,8 @@ bool askRepeat(const std::string& prompt) {
     return (ans == 'y' || ans == 'Y');
 }
 
-
-// ── Export query results to CSV for Python visualizer ────────────────────────
-// writes name,province,population,area_km2,elevation_m,type,min_lon,min_lat,max_lon,max_lat
-// Python reads this and plots the highlighted cities on the map
-
+// eport query results to CSV for Python visualizer for mapping 
+// name,province,population,area_km2,elevation_m,type,min_lon,min_lat,max_lon,max_lat
 void exportQueryResult(const std::vector<Rectangle>& results,
                        const std::string& filename = "query_result.csv") {
     std::ofstream f(filename);
@@ -118,10 +105,7 @@ void exportQueryResult(const std::vector<Rectangle>& results,
     f.close();
 }
 
-// ── Launch Python visualizer ──────────────────────────────────────────────────
-// func: "1" = region, "2" = nearby, "3" = type
-// title: shown on the map e.g. "Punjab" or "100km of Karachi"
-
+// launch Python visualizer func: "1" = region, "2" = nearby, "3" = type
 void showMap(const std::vector<Rectangle>& results,
              const std::string& title,
              const std::string& func) {
@@ -129,28 +113,20 @@ void showMap(const std::vector<Rectangle>& results,
         std::cout << "  (No results to map)\n";
         return;
     }
-
     // write result CSV for Python
     exportQueryResult(results);
-
-    // build the shell command
-    // title may contain spaces so wrap in quotes
     std::string cmd = "python3 visualize.py query_result.csv \""
                       + title + "\" " + func;
-
     std::cout << "  Generating map...\n";
     int ret = system(cmd.c_str());
-
     if (ret == 0)
         std::cout << "  Map saved as map_output.png\n";
     else
         std::cout << "  Map generation failed. Is visualize.py in the same folder?\n";
 }
 
-// ── Ask "View on map?" helper ─────────────────────────────────────────────────
 // called after results print in functions 1, 2, 3
 // returns true if user wants the map
-
 bool askMap() {
     char ans;
     std::cout << "  View results on map? (y/n): ";
@@ -158,26 +134,20 @@ bool askMap() {
     return (ans == 'y' || ans == 'Y');
 }
 
-
-// ── Load cities from CSV ──────────────────────────────────────────────────────
-
 bool loadCities(Rtree& tree) {
     std::ifstream file(CSV_FILE);
     if (!file.is_open()) {
         std::cout << "  ERROR: cannot open " << CSV_FILE << "\n";
         return false;
     }
-
     cities.clear();
     std::string line;
     std::getline(file, line); // skip header
-
     while (std::getline(file, line)) {
         if (line.empty()) continue;
         std::stringstream ss(line);
         std::string tok;
         City c;
-
         std::getline(ss, c.name,     ',');
         std::getline(ss, c.province, ',');
         std::getline(ss, tok, ','); c.population  = std::stol(tok);
@@ -188,16 +158,13 @@ bool loadCities(Rtree& tree) {
         std::getline(ss, tok, ','); c.bbox.y1     = std::stof(tok);
         std::getline(ss, tok, ','); c.bbox.x2     = std::stof(tok);
         std::getline(ss, tok, ','); c.bbox.y2     = std::stof(tok);
-
         cities.push_back(c);
         tree.insert(c.bbox);
     }
     return true;
 }
 
-
-// ── Save cities back to CSV ───────────────────────────────────────────────────
-
+// save cities back to CSV 
 void saveCSV() {
     std::ofstream file(CSV_FILE);
     file << "name,province,population,area_km2,elevation_m,type,min_lon,min_lat,max_lon,max_lat\n";
@@ -215,28 +182,22 @@ void saveCSV() {
     }
 }
 
-
-// ── Match result rectangle back to City ──────────────────────────────────────
-
+// match result rectangle back to City
 City* findCity(const Rectangle& r) {
     for (City& c : cities)
         if (c.bbox.equals(r)) return &c;
     return nullptr;
 }
 
-
-// ── Print search results with summary stats ───────────────────────────────────
-
+// print search results with summary stats 
 void printResults(const std::vector<Rectangle>& results) {
     if (results.empty()) {
         std::cout << "  No cities found.\n";
         return;
     }
-
     printLine();
     long  totalPop = 0;
     City* largest  = nullptr;
-
     for (const Rectangle& r : results) {
         City* c = findCity(r);
         if (!c) continue;
@@ -253,15 +214,10 @@ void printResults(const std::vector<Rectangle>& results) {
         std::cout << "  Largest city    : " << largest->name << "\n";
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  FUNCTION 1 — Search cities in a region
-// ─────────────────────────────────────────────────────────────────────────────
-
 void searchRegion(Rtree& tree) {
     do {
         printTitle("FUNCTION 1: SEARCH CITIES IN A REGION");
-
         std::cout << "  Select region:\n";
         std::cout << "    a → All of Pakistan\n";
         std::cout << "    b → Punjab\n";
@@ -270,11 +226,9 @@ void searchRegion(Rtree& tree) {
         std::cout << "    e → Balochistan\n";
         std::cout << "    f → Custom coordinates\n";
         std::cout << "  Choice: ";
-
         char ch; std::cin >> ch;
         Rectangle   box;
         std::string label;
-
         if      (ch == 'a') { box = {60.0, 23.0, 78.0, 37.5}; label = "All of Pakistan"; }
         else if (ch == 'b') { box = {70.0, 29.0, 75.5, 33.5}; label = "Punjab"; }   // tightened max_lat to 33.5 (was 33.8 which included Islamabad)
         else if (ch == 'c') { box = {66.0, 23.5, 71.0, 28.5}; label = "Sindh"; }
@@ -285,28 +239,19 @@ void searchRegion(Rtree& tree) {
             std::cin >> box.x1 >> box.y1 >> box.x2 >> box.y2;
             label = "Custom region";
         }
-
         std::cout << "\n  Searching: " << label << "...\n";
-
         std::vector<Rectangle> results;
         tree.search(tree.getRoot(), box, results);
         printResults(results);
-
         if (!results.empty() && askMap())
             showMap(results, label, "1");
-
     } while (askRepeat("Search another region?"));
 }
 
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  FUNCTION 2 — Find cities near a location
-// ─────────────────────────────────────────────────────────────────────────────
-
 void findNearby(Rtree& tree) {
     do {
         printTitle("FUNCTION 2: FIND CITIES NEAR A LOCATION");
-
         std::cout << "  Select center point:\n";
         std::cout << "    a → Islamabad  (73.1, 33.7)\n";
         std::cout << "    b → Karachi    (67.0, 24.9)\n";
@@ -314,11 +259,9 @@ void findNearby(Rtree& tree) {
         std::cout << "    d → Peshawar   (71.6, 34.0)\n";
         std::cout << "    e → Custom GPS coordinates\n";
         std::cout << "  Choice: ";
-
         char ch; std::cin >> ch;
         float lon, lat;
         std::string label;
-
         if      (ch == 'a') { lon = 73.1f; lat = 33.7f; label = "Islamabad"; }
         else if (ch == 'b') { lon = 67.0f; lat = 24.9f; label = "Karachi";   }
         else if (ch == 'c') { lon = 74.3f; lat = 31.5f; label = "Lahore";    }
@@ -328,13 +271,10 @@ void findNearby(Rtree& tree) {
             std::cin >> lon >> lat;
             label = "Custom point";
         }
-
         std::cout << "  Enter radius in km (e.g. 100): ";
         float km; std::cin >> km;
-
         // 1 degree ≈ 100 km (rough approximation)
         float radius = km / 100.0f;
-
         Rectangle searchBox = {
             lon - radius,
             lat - radius,

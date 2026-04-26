@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <map>
+#include <cstdlib>   // for system()
 
 /*
     PAKISTAN CITY SPATIAL SEARCH APPLICATION
@@ -84,6 +85,75 @@ bool askRepeat(const std::string& prompt) {
     std::cout << "    y → Yes, do it again\n";
     std::cout << "    m → Back to main menu\n";
     std::cout << "  Choice: ";
+    std::cin >> ans;
+    return (ans == 'y' || ans == 'Y');
+}
+
+
+// ── Export query results to CSV for Python visualizer ────────────────────────
+// writes name,province,population,area_km2,elevation_m,type,min_lon,min_lat,max_lon,max_lat
+// Python reads this and plots the highlighted cities on the map
+
+void exportQueryResult(const std::vector<Rectangle>& results,
+                       const std::string& filename = "query_result.csv") {
+    std::ofstream f(filename);
+    f << "name,province,population,area_km2,elevation_m,type,"
+      << "min_lon,min_lat,max_lon,max_lat\n";
+    for (const Rectangle& r : results) {
+        City* c = nullptr;
+        for (City& city : cities)
+            if (city.bbox.equals(r)) { c = &city; break; }
+        if (!c) continue;
+        f << c->name        << ","
+          << c->province    << ","
+          << c->population  << ","
+          << c->area_km2    << ","
+          << c->elevation_m << ","
+          << c->type        << ","
+          << c->bbox.x1     << ","
+          << c->bbox.y1     << ","
+          << c->bbox.x2     << ","
+          << c->bbox.y2     << "\n";
+    }
+    f.close();
+}
+
+// ── Launch Python visualizer ──────────────────────────────────────────────────
+// func: "1" = region, "2" = nearby, "3" = type
+// title: shown on the map e.g. "Punjab" or "100km of Karachi"
+
+void showMap(const std::vector<Rectangle>& results,
+             const std::string& title,
+             const std::string& func) {
+    if (results.empty()) {
+        std::cout << "  (No results to map)\n";
+        return;
+    }
+
+    // write result CSV for Python
+    exportQueryResult(results);
+
+    // build the shell command
+    // title may contain spaces so wrap in quotes
+    std::string cmd = "python3 visualize.py query_result.csv \""
+                      + title + "\" " + func;
+
+    std::cout << "  Generating map...\n";
+    int ret = system(cmd.c_str());
+
+    if (ret == 0)
+        std::cout << "  Map saved as map_output.png\n";
+    else
+        std::cout << "  Map generation failed. Is visualize.py in the same folder?\n";
+}
+
+// ── Ask "View on map?" helper ─────────────────────────────────────────────────
+// called after results print in functions 1, 2, 3
+// returns true if user wants the map
+
+bool askMap() {
+    char ans;
+    std::cout << "  View results on map? (y/n): ";
     std::cin >> ans;
     return (ans == 'y' || ans == 'Y');
 }
@@ -222,6 +292,9 @@ void searchRegion(Rtree& tree) {
         tree.search(tree.getRoot(), box, results);
         printResults(results);
 
+        if (!results.empty() && askMap())
+            showMap(results, label, "1");
+
     } while (askRepeat("Search another region?"));
 }
 
@@ -291,6 +364,11 @@ void findNearby(Rtree& tree) {
                 std::cout << "  Nearest city    : " << nearest->name << "\n";
         }
 
+        if (!results.empty() && askMap()) {
+            std::string mapTitle = std::to_string((int)km) + "km of " + label;
+            showMap(results, mapTitle, "2");
+        }
+
     } while (askRepeat("Search another location?"));
 }
 
@@ -333,6 +411,9 @@ void searchByType(Rtree& tree) {
 
         std::cout << "\n  " << typeFilter << " cities in Pakistan:\n";
         printResults(filtered);
+
+        if (!filtered.empty() && askMap())
+            showMap(filtered, typeFilter + " cities", "3");
 
     } while (askRepeat("Search another city type?"));
 }

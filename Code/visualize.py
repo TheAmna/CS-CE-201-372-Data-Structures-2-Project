@@ -1,20 +1,3 @@
-"""
-visualize.py — Pakistan City Spatial Search Map
-================================================
-Called by application.cpp after a search to display results on a map.
-
-Usage:
-    python3 visualize.py <query_result.csv> <title> <function_number>
-
-Arguments:
-    query_result.csv   — cities found by the R-tree search (written by C++)
-    title              — map title string  e.g. "Punjab" or "100km of Karachi"
-    function_number    — 1 (region), 2 (nearby), or 3 (type)
-
-Output:
-    map_output.png     — saved in current directory, then opened automatically
-"""
-
 import sys
 import os
 import pandas as pd
@@ -26,14 +9,10 @@ import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 import matplotlib.patheffects as pe
 
-
-# ── Config ────────────────────────────────────────────────────────────────────
-
 SHAPEFILE = "natural_earth_data/ne_110m_admin_0_countries.shp"
 ALL_CITIES_CSV = "pakistan_cities.csv"
 OUTPUT_FILE    = "map_output.png"
 
-# province → color mapping (matches your data exactly)
 PROVINCE_COLORS = {
     "Punjab"      : "#e63946",   # red
     "Sindh"       : "#2a9d8f",   # teal
@@ -53,9 +32,6 @@ TYPE_MARKERS = {
     "historical" : "^",
     "city"       : "o",
 }
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def get_color(province):
     return PROVINCE_COLORS.get(province, DEFAULT_COLOR)
@@ -88,21 +64,14 @@ def smart_label_offset(lon, lat):
     else:
         return  0.15, 0.12, 'left'
 
-
-# ── Main ──────────────────────────────────────────────────────────────────────
-
 def main():
-
-    # ── Parse arguments ───────────────────────────────────────────────────────
     if len(sys.argv) < 2:
         print("Usage: python3 visualize.py <query_result.csv> [title] [function_number]")
         sys.exit(1)
-
     result_csv   = sys.argv[1]
     map_title    = sys.argv[2] if len(sys.argv) > 2 else "Search Results"
     func_num     = sys.argv[3] if len(sys.argv) > 3 else "1"
-
-    # subtitle text per function
+    # subtitle per function
     subtitles = {
         "1": "R-Tree Region Search",
         "2": "R-Tree Proximity Search",
@@ -110,40 +79,30 @@ def main():
     }
     subtitle = subtitles.get(func_num, "R-Tree Spatial Search")
 
-    # ── Load data ─────────────────────────────────────────────────────────────
     if not os.path.exists(SHAPEFILE):
         print(f"ERROR: Shapefile not found: {SHAPEFILE}")
         print("Make sure ne_110m_admin_0_countries.shp is in the same folder.")
         sys.exit(1)
-
     if not os.path.exists(ALL_CITIES_CSV):
         print(f"ERROR: {ALL_CITIES_CSV} not found.")
         sys.exit(1)
-
     if not os.path.exists(result_csv):
         print(f"ERROR: Result CSV not found: {result_csv}")
         sys.exit(1)
-
     # load Pakistan outline from shapefile
     world         = gpd.read_file(SHAPEFILE)
     pakistan_shape = world[world['ADMIN'] == 'Pakistan']
-
     # load all cities (for grey background dots)
     all_cities = pd.read_csv(ALL_CITIES_CSV)
     all_cities['lon'] = (all_cities['min_lon'] + all_cities['max_lon']) / 2
     all_cities['lat'] = (all_cities['min_lat'] + all_cities['max_lat']) / 2
-
     # load result cities (highlighted)
     result_cities = pd.read_csv(result_csv)
     result_cities['lon'] = (result_cities['min_lon'] + result_cities['max_lon']) / 2
     result_cities['lat'] = (result_cities['min_lat'] + result_cities['max_lat']) / 2
-
-    # ── Figure setup ──────────────────────────────────────────────────────────
     fig, ax = plt.subplots(figsize=(13, 11))
     fig.patch.set_facecolor('#1a1a2e')   # dark navy background
     ax.set_facecolor('#1a1a2e')
-
-    # ── Draw Pakistan border ──────────────────────────────────────────────────
     pakistan_shape.plot(
         ax        = ax,
         color     = '#16213e',     # dark fill
@@ -188,7 +147,6 @@ def main():
         marker = get_marker(row['type'])
         size   = scale_size(row['population'])
         dx, dy, ha = smart_label_offset(row['lon'], row['lat'])
-
         # outer glow ring
         ax.scatter(
             row['lon'], row['lat'],
@@ -199,7 +157,6 @@ def main():
             marker     = 'o',
             linewidths = 0
         )
-
         # main dot
         ax.scatter(
             row['lon'], row['lat'],
@@ -212,7 +169,6 @@ def main():
             label      = row['province'] if row['province'] not in plotted_provinces else ""
         )
         plotted_provinces.add(row['province'])
-
         # city name label with dark outline so it's readable on any background
         ax.annotate(
             f"{row['name']}",
@@ -228,7 +184,6 @@ def main():
                 pe.withStroke(linewidth=2.5, foreground='#1a1a2e')
             ]
         )
-
         # population sub-label
         ax.annotate(
             fmt_pop(row['population']),
@@ -245,11 +200,10 @@ def main():
             ]
         )
 
-    # ── Map extent: zoom to Pakistan with padding ─────────────────────────────
+    # map extent: zoom to Pakistan with padding 
     ax.set_xlim(59.5, 78.5)
     ax.set_ylim(22.5, 38.0)
-
-    # ── Gridlines ─────────────────────────────────────────────────────────────
+    # gridlines 
     ax.grid(
         True,
         color     = '#2a2a4a',
@@ -261,12 +215,10 @@ def main():
     ax.tick_params(colors='#888899', labelsize=8)
     for spine in ax.spines.values():
         spine.set_edgecolor('#2a2a4a')
-
-    # ── Axis labels ───────────────────────────────────────────────────────────
+    # axis labels
     ax.set_xlabel("Longitude", color='#aaaacc', fontsize=9, labelpad=6)
     ax.set_ylabel("Latitude",  color='#aaaacc', fontsize=9, labelpad=6)
-
-    # ── Legend: provinces (colored dots) ─────────────────────────────────────
+    # provinces (colored dots) 
     province_patches = []
     for prov in sorted(plotted_provinces):
         province_patches.append(
@@ -377,16 +329,11 @@ def main():
         color      = '#8888bb',
         style      = 'italic'
     )
-
-    # ── Save ──────────────────────────────────────────────────────────────────
     plt.tight_layout(rect=[0, 0.03, 1, 1])
     plt.savefig(OUTPUT_FILE, dpi=180, bbox_inches='tight',
                 facecolor=fig.get_facecolor())
     plt.close()
-
     print(f"  Map saved to {OUTPUT_FILE}")
-
-    # ── Open the image automatically ──────────────────────────────────────────
     # Try common Linux/Chromebook image viewers in order
     viewers = ['eog', 'feh', 'display', 'xdg-open', 'gpicview', 'ristretto']
     opened  = False
@@ -399,7 +346,5 @@ def main():
 
     if not opened:
         print(f"  Could not auto-open image. Please open {OUTPUT_FILE} manually.")
-
-
 if __name__ == "__main__":
     main()

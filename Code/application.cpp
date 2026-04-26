@@ -1,5 +1,4 @@
 #include "Rtree.hpp"
-#include "Btree.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -19,9 +18,6 @@
         2 → Find cities near a location      (R-tree proximity search)
         3 → Search by city type              (R-tree search + type filter)
         4 → Province summary + statistics    (R-tree full scan + grouping)
-        5 → Add a new city                   (R-tree insert + CSV save)
-        6 → Remove a city                    (R-tree delete + CSV save)
-        7 → Compare R-tree vs B-tree         (shows why R-trees exist)
         q → Quit
 */
 
@@ -434,139 +430,6 @@ void provinceSummary(Rtree& tree) {
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  FUNCTION 5 — Add a new city
-// ─────────────────────────────────────────────────────────────────────────────
-
-void addCity(Rtree& tree) {
-    do {
-        printTitle("FUNCTION 5: ADD A NEW CITY");
-
-        City c;
-
-        std::cin.ignore();
-        std::cout << "  City name     : "; std::getline(std::cin, c.name);
-        std::cout << "  Province      : "; std::getline(std::cin, c.province);
-        std::cout << "  Population    : "; std::cin >> c.population;
-        std::cout << "  Area (km²)    : "; std::cin >> c.area_km2;
-        std::cout << "  Elevation (m) : "; std::cin >> c.elevation_m;
-
-        std::cin.ignore();
-        std::cout << "  Type (city/capital/port/industrial/historical): ";
-        std::getline(std::cin, c.type);
-
-        float lon, lat;
-        std::cout << "  Center longitude (e.g. 67.0): "; std::cin >> lon;
-        std::cout << "  Center latitude  (e.g. 25.0): "; std::cin >> lat;
-
-        c.bbox = { lon - 0.15f, lat - 0.15f,
-                   lon + 0.15f, lat + 0.15f };
-
-        tree.insert(c.bbox);
-        cities.push_back(c);
-        saveCSV();
-
-        std::cout << "\n  ✓ " << c.name << " added to R-tree\n";
-        std::cout << "  ✓ Saved to " << CSV_FILE << "\n";
-
-    } while (askRepeat("Add another city?"));
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  FUNCTION 6 — Remove a city
-// ─────────────────────────────────────────────────────────────────────────────
-
-void removeCity(Rtree& tree) {
-    do {
-        printTitle("FUNCTION 6: REMOVE A CITY");
-
-        if (cities.empty()) {
-            std::cout << "  No cities loaded.\n";
-            break;  // nothing to remove, exit the loop immediately
-        }
-
-        std::cout << "  Select city to remove:\n\n";
-        for (int i = 0; i < (int)cities.size(); ++i) {
-            std::cout << "  " << std::setw(3) << (i + 1) << ". "
-                      << std::left << std::setw(20) << cities[i].name
-                      << "(" << cities[i].province << ", " << cities[i].type << ")\n";
-        }
-
-        std::cout << "\n  Enter number (0 to cancel): ";
-        int choice; std::cin >> choice;
-
-        if (choice <= 0 || choice > (int)cities.size()) {
-            std::cout << "  Cancelled.\n";
-            // still ask if they want to try again or go back
-        } else {
-            City toRemove = cities[choice - 1];
-            bool removed  = tree.remove(toRemove.bbox);
-
-            if (removed) {
-                cities.erase(cities.begin() + (choice - 1));
-                saveCSV();
-                std::cout << "\n  ✓ " << toRemove.name << " removed from R-tree\n";
-                std::cout << "  ✓ CSV updated\n";
-            } else {
-                std::cout << "  ERROR: could not remove from R-tree\n";
-            }
-        }
-
-    } while (askRepeat("Remove another city?"));
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-//  FUNCTION 7 — Compare R-tree vs B-tree
-// ─────────────────────────────────────────────────────────────────────────────
-
-void compareWithBtree(Rtree& rtree) {
-    do {
-        printTitle("FUNCTION 7: R-TREE vs B-TREE COMPARISON");
-
-        Btree btree(2);
-        for (const City& c : cities)
-            btree.insert(c.bbox.x1);
-
-        std::cout << "  Same " << cities.size() << " cities loaded into both trees.\n";
-        std::cout << "  R-tree stores full bbox {x1,y1,x2,y2}\n";
-        std::cout << "  B-tree stores only x1 (longitude) as a 1D key\n\n";
-
-        // ── Query A: 1D range ────────────────────────────────────────────
-        std::cout << "  Query A — 1D: cities with longitude (x1) between 66 and 75\n";
-        std::cout << "  (Both trees should agree on this)\n";
-
-        auto bKeys = btree.rangeSearch(66.0f, 75.0f);
-
-        std::vector<Rectangle> rResults;
-        rtree.search(rtree.getRoot(), {66.0, -99, 75.0, 99}, rResults);
-
-        std::cout << "  B-tree found : " << bKeys.size()    << " keys\n";
-        std::cout << "  R-tree found : " << rResults.size() << " cities\n";
-
-        // ── Query B: 2D range ────────────────────────────────────────────
-        std::cout << "\n  Query B — 2D: cities inside box {66,24,75,33}\n";
-        std::cout << "  (x: 66-75  AND  y: 24-33 — needs BOTH dimensions)\n";
-
-        auto bKeys2 = btree.rangeSearch(66.0f, 75.0f);
-
-        std::vector<Rectangle> rResults2;
-        rtree.search(rtree.getRoot(), {66.0, 24.0, 75.0, 33.0}, rResults2);
-
-        std::cout << "\n  R-tree found : " << rResults2.size() << " cities  ✓ correct (checks x AND y)\n";
-        std::cout << "  B-tree found : " << bKeys2.size()     << " keys    ✗ wrong  (only checked x1)\n";
-        printLine();
-        std::cout << "  The B-tree returned " << (bKeys2.size() - rResults2.size())
-                  << " extra results because it cannot filter by latitude.\n";
-        std::cout << "  This is exactly why R-trees were invented —\n";
-        std::cout << "  traditional structures cannot handle multi-dimensional data.\n";
-        printLine();
-
-    } while (askRepeat("Run the comparison again?"));
-}
-
-
-// ─────────────────────────────────────────────────────────────────────────────
 //  MAIN
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -594,9 +457,6 @@ int main() {
         std::cout << "    2 → Find cities near a location\n";
         std::cout << "    3 → Search by city type\n";
         std::cout << "    4 → Province summary + statistics\n";
-        std::cout << "    5 → Add a new city\n";
-        std::cout << "    6 → Remove a city\n";
-        std::cout << "    7 → Compare R-tree vs B-tree\n";
         std::cout << "    q → Quit\n";
         std::cout << "  ════════════════════════════════════════════════\n";
         std::cout << "  Choice: ";
@@ -606,9 +466,6 @@ int main() {
         else if (choice == '2') findNearby(tree);
         else if (choice == '3') searchByType(tree);
         else if (choice == '4') provinceSummary(tree);
-        else if (choice == '5') addCity(tree);
-        else if (choice == '6') removeCity(tree);
-        else if (choice == '7') compareWithBtree(tree);
         else if (choice != 'q') std::cout << "  Invalid choice, try again.\n";
 
     } while (choice != 'q');

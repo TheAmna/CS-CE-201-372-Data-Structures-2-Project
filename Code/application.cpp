@@ -9,16 +9,14 @@
 #include <map>
 #include <cstdlib>   // for system()
 
-/*
-    Uses an R-tree to store Pakistani cities as bounding boxes.
+/* Uses an R-tree to store Pakistani cities as bounding boxes.
     Each city has: name, province, population, area, elevation, type, coordinates.
     MENU:
         1 → Search cities in a region        (R-tree 2D range search)
         2 → Find cities near a location      (R-tree proximity search)
         3 → Search by city type              (R-tree search + type filter)
         4 → Province summary + statistics    (R-tree full scan + grouping)
-        q → Quit
-*/
+        q → Quit*/
 
 struct City {
     std::string name;
@@ -201,7 +199,6 @@ void printResults(const std::vector<Rectangle>& results) {
         if (!largest || c->population > largest->population)
             largest = c;
     }
-
     printLine();
     std::cout << "  Cities found    : " << results.size()    << "\n";
     std::cout << "  Total population: " << fmtPop(totalPop)  << "\n";
@@ -240,7 +237,8 @@ void searchRegion(Rtree& tree) {
         printResults(results);
         if (!results.empty() && askMap())
             showMap(results, label, "1");
-    } while (askRepeat("Search another region?"));
+    } 
+    while (askRepeat("Search another region?"));
 }
 
 //  FUNCTION 2 — Find cities near a location
@@ -278,11 +276,9 @@ void findNearby(Rtree& tree) {
         };
 
         std::cout << "\n  Cities within " << (int)km << "km of " << label << ":\n";
-
         std::vector<Rectangle> results;
         tree.search(tree.getRoot(), searchBox, results);
         printResults(results);
-
         // find nearest city by center-point distance
         if (!results.empty()) {
             City*  nearest = nullptr;
@@ -334,7 +330,6 @@ void searchByType(Rtree& tree) {
             if (c && c->type == typeFilter)
                 filtered.push_back(r);
         }
-
         std::cout << "\n  " << typeFilter << " cities in Pakistan:\n";
         printResults(filtered);
         if (!filtered.empty() && askMap())
@@ -372,7 +367,6 @@ void provinceSummary(Rtree& tree) {
                 if (!largest || c->population > largest->population)
                     largest = c;
             }
-
             long density = (totalArea > 0) ? totalPop / totalArea : 0;
             std::cout << "  " << std::left
                       << std::setw(16) << province

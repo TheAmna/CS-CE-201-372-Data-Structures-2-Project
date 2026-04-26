@@ -1,0 +1,21 @@
+name,province,population,area_km2,elevation_m,type,min_lon,min_lat,max_lon,max_lat
+Karachi,Sindh,16000000,3780,8,port,66.85,24.75,67.15,25.05
+Lahore,Punjab,13000000,1772,217,historical,74.18,31.40,74.48,31.70
+Faisalabad,Punjab,3600000,1300,184,industrial,73.08,31.27,73.38,31.57
+Rawalpindi,Punjab,2300000,259,508,city,73.02,33.45,73.32,33.75
+Islamabad,ICT,1100000,906,507,capital,72.98,33.60,73.28,33.90
+Gujranwala,Punjab,2300000,3622,220,industrial,74.14,32.02,74.44,32.32
+Peshawar,KPK,1970000,1257,359,historical,71.42,33.92,71.72,34.22
+Multan,Punjab,1870000,133,122,historical,71.38,30.10,71.68,30.40
+Hyderabad,Sindh,1700000,994,13,industrial,68.22,25.27,68.52,25.57
+Quetta,Balochistan,1000000,2653,1680,city,66.90,30.10,67.20,30.40
+Sialkot,Punjab,655000,3016,256,industrial,74.49,32.38,74.79,32.68
+Bahawalpur,Punjab,762000,24830,117,historical,71.58,29.28,71.88,29.58
+Sukkur,Sindh,499000,271,66,city,68.78,27.60,69.08,27.90
+Larkana,Sindh,490000,5765,56,historical,68.12,27.48,68.42,27.78
+Abbottabad,KPK,209000,1967,1260,city,73.15,34.10,73.45,34.40
+Gilgit,GB,216000,72971,1500,city,74.28,35.88,74.58,36.18
+Muzaffarabad,AJK,725000,13297,702,capital,73.38,34.28,73.68,34.58
+Dera Ghazi Khan,Punjab,399000,11922,171,city,70.55,30.00,70.85,30.30
+Mardan,KPK,358000,1632,283,industrial,72.00,34.12,72.30,34.42
+Gwadar,Balochistan,90000,598,2,port,62.18,25.08,62.48,25.38

@@ -1,0 +1,9 @@
+name,province,population,area_km2,elevation_m,type,min_lon,min_lat,max_lon,max_lat
+Multan,Punjab,1870000,133,122,historical,71.38,30.1,71.68,30.4
+Bahawalpur,Punjab,762000,24830,117,historical,71.58,29.28,71.88,29.58
+Dera Ghazi Khan,Punjab,399000,11922,171,city,70.55,30,70.85,30.3
+Sialkot,Punjab,655000,3016,256,industrial,74.49,32.38,74.79,32.68
+Gujranwala,Punjab,2300000,3622,220,industrial,74.14,32.02,74.44,32.32
+Faisalabad,Punjab,3600000,1300,184,industrial,73.08,31.27,73.38,31.57
+Lahore,Punjab,13000000,1772,217,historical,74.18,31.4,74.48,31.7
+Rawalpindi,Punjab,2300000,259,508,city,73.02,33.45,73.32,33.75

@@ -36,9 +36,10 @@ We built a user interactive C++ terminal application using 20 Pakistani cities a
 
 ## Challenges
 
-1. When a node overflows, the split algorithm has to divide rectangles into two groups in a way that minimizes MBR overlap — getting the PickSeeds and PickNext logic right took several iterations.
-2. C++ has limited libraries for map rendering, so we moved the visualization layer to Python entirely.
-3. The R-tree has additional internal operations beyond the usual insert, search, and delete — specifically `condenseTree` and `reinsertSubtree` for deletion — which required deeper reading of Guttman's original 1984 paper to implement correctly.
+1. When a node overflows, the split algorithm has to divide rectangles into two groups in a way that minimizes MBR overlap. So we tried searching up the logic, found quite interesting articles on it.
+2. C++ has limited libraries for map rendering, so we moved the visualization layer to Python and utlised libraries such as Pandas, Geopandas amd Matplotlib to visualise the maps.
+3. The R-tree has additional internal operations beyond the usual insert, search, and delete — specifically `condenseTree` and `reinsertSubtree` for deletion which required deeper reading of Guttman's original 1984 paper to implement correctly.
+
 
 
 

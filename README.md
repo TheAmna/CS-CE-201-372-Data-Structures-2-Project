@@ -9,14 +9,15 @@
 
 Research analysis on the data structure R-tree. We implemented the R-tree from scratch in C++ along with a B-tree for comparison, assessed the time complexities of all core operations, and built a real-world application that searches Pakistani cities using spatial queries.
 
-## Interim Demo
-
-https://github.com/user-attachments/assets/595db9af-1605-4ce4-ba3b-8f9f2c13852e
-
 
 ## Motivation to use R trees
 
 An R-tree is a height-balanced spatial index that stores data as Minimum Bounding Rectangles (MBRs). B-trees only indexes one dimension, an R-tree can answer 2D range queries like "find all cities inside this region". At each level of the tree, a parent MBR tightly encloses all of its children, allowing entire subtrees to be skipped during search if they don't overlap the query box.
+
+
+## Interim Demo
+
+https://github.com/user-attachments/assets/595db9af-1605-4ce4-ba3b-8f9f2c13852e
 
 
 ## Application

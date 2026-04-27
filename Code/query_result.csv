@@ -1,8 +1,8 @@
 name,province,population,area_km2,elevation_m,type,min_lon,min_lat,max_lon,max_lat
 Peshawar,KPK,1970000,1257,359,historical,71.42,33.92,71.72,34.22
-Mardan,KPK,358000,1632,283,industrial,72,34.12,72.3,34.42
-Gilgit,GB,216000,72971,1500,city,74.28,35.88,74.58,36.18
+Mardan,KPK,358000,1632,283,industrial,71.9,34.12,72.2,34.42
 Muzaffarabad,AJK,725000,13297,702,capital,73.38,34.28,73.68,34.58
-Islamabad,ICT,1100000,906,507,capital,72.98,33.6,73.28,33.9
-Rawalpindi,Punjab,2300000,259,508,city,73.02,33.45,73.32,33.75
-Abbottabad,KPK,209000,1967,1260,city,73.15,34.1,73.45,34.4
+Islamabad,ICT,1100000,906,507,capital,72.9,33.6,73.2,33.9
+Rawalpindi,Punjab,2300000,259,508,city,72.92,33.45,73.22,33.75
+Abbottabad,KPK,209000,1967,1260,city,73.07,34.1,73.37,34.4
+Gilgit,GB,216000,72971,1500,city,74.16,35.88,74.46,36.18

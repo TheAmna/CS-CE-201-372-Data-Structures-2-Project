@@ -139,10 +139,10 @@ bool loadCities(Rtree& tree) {
     while (std::getline(file, line)) {
         if (line.empty()) continue;
         std::stringstream ss(line);
-        std::string tok;
+        std::string tok; //token
         City c;
         std::getline(ss, c.name,     ',');
-        std::getline(ss, c.province, ',');
+        std::getline(ss, c.province, ','); //std::stol - str to long
         std::getline(ss, tok, ','); c.population  = std::stol(tok);
         std::getline(ss, tok, ','); c.area_km2    = std::stoi(tok);
         std::getline(ss, tok, ','); c.elevation_m = std::stoi(tok);
@@ -224,7 +224,7 @@ void searchRegion(Rtree& tree) {
         if      (ch == 'a') { box = {60.0, 23.0, 78.0, 37.5}; label = "All of Pakistan"; }
         else if (ch == 'b') { box = {70.0, 29.0, 75.5, 33.5}; label = "Punjab"; }   // tightened max_lat to 33.5 (was 33.8 which included Islamabad)
         else if (ch == 'c') { box = {66.0, 23.5, 71.0, 28.5}; label = "Sindh"; }
-        else if (ch == 'd') { box = {69.5, 33.5, 74.5, 36.0}; label = "KPK"; }
+        else if (ch == 'd') { box = {69.5, 33.91, 74.5, 35.8}; label = "KPK"; }
         else if (ch == 'e') { box = {60.0, 25.0, 70.0, 32.0}; label = "Balochistan"; }
         else {
             std::cout << "  Enter min_lon min_lat max_lon max_lat: ";

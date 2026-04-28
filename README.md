@@ -37,8 +37,8 @@ We built a user interactive C++ terminal application using 20 Pakistani cities a
 ## Challenges
 
 1. When a node overflows, the split algorithm has to divide rectangles into two groups in a way that minimizes MBR overlap. So we tried searching up the logic, found quite interesting articles on it.
-2. C++ has limited libraries for map rendering, so we moved the visualization layer to Python and utlised libraries such as Pandas, Geopandas amd Matplotlib to visualise the maps.
-3. The R-tree has additional internal operations beyond the usual insert, search, and delete — specifically `condenseTree` and `reinsertSubtree` for deletion which required deeper reading of Guttman's original 1984 paper to implement correctly.
+2. C++ has limited libraries for map rendering, so we moved the visualization layer to Python and utlised libraries such as Pandas, Geopandas amd Matplotlib to visualise the maps. The challenge was that the map was produced in png and we plan to further improve this project by swicthing it to vecotr graphics like json file.
+3. The R-tree has additional internal operations beyond the usual insert, search, and delete, specifically `condenseTree` and `reinsertSubtree` for deletion which required deeper reading of Guttman's original 1984 paper to implement correctly.
 
 
 
@@ -46,4 +46,4 @@ We built a user interactive C++ terminal application using 20 Pakistani cities a
 ## Key Learnings
 
 1. Tree quality depends heavily on the split heuristic. A bad split produces large overlapping MBRs that force the search to visit more branches, degrading performance toward O(n).
-2. Deletion in an R-tree works differently from a B-tree — instead of borrowing or merging like B-trees do, R-trees dissolve underfull nodes and re-insert their entries, which keeps the spatial quality of the tree intact.
+2. Deletion in an R-tree works differently from a B-tree, instead of borrowing or merging like B-trees do, R-trees dissolve underfull nodes and re-insert their entries, which keeps the spatial quality of the tree intact.
